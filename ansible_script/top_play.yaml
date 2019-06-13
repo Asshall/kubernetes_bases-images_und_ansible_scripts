@@ -1,0 +1,17 @@
+---
+
+- hosts: master
+  become: yes
+  gather_facts: no
+  roles: 
+  - common-master 
+  environment:
+        ANSIBLE_HOST_KEY_CHECKING: False
+
+- hosts: workers
+  become: yes
+  gather_facts: no 
+  roles:
+  - common-workers  
+
+...

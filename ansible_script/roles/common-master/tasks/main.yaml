@@ -1,0 +1,39 @@
+- name: Add workers to inventory
+  block: 
+  - fail: 
+      msg: No workers have been found in groups_vars -> workers, at least one is needed
+    when: workers is none
+  - add_host:
+      hostname: "{{ workers_prefix ~ (index + 1) }}"
+      mac: "{{ item }}"
+      groups: workers
+    with_items: "{{ workers }}"
+    loop_control:
+      index_var: index
+
+- include_tasks: common_tasks.yaml
+
+- name: Configure network manager to leave us alone 
+  lineinfile: 
+    dest: /etc/NetworkManager/NetworkManager.conf
+    regexp: "^(unmanaged-devices).+?ethernet"
+    line: '\1=*'
+    backrefs: yes
+
+- name: Install needed packages
+  apt:
+    force_apt_get: yes
+    name: [ isc-dhcp-server, bind9, kmod, ifupdown2, curl ]
+    state: present
+  when: test is undefined
+
+- name: Add iptables modules
+  modprobe:
+    name: iptable_nat
+    state: present
+  with_items: "iptable_nat, iptables_filter, nf_conntrack_ipv4"
+
+- name: Enable IP forwarding
+  shell: echo '1' > /proc/sys/net/ipv4/ip_forward
+
+
